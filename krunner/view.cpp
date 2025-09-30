@@ -156,24 +156,7 @@ void View::showEvent(QShowEvent *event)
 
 void View::positionOnScreen()
 {
-    const auto screens = QGuiApplication::screens();
-    auto screenIt = screens.cend();
-    if (KWindowSystem::isPlatformWayland() && m_floating) {
-        auto message = QDBusMessage::createMethodCall(u"org.kde.KWin"_s, u"/KWin"_s, u"org.kde.KWin"_s, u"activeOutputName"_s);
-        QDBusReply<QString> reply = QDBusConnection::sessionBus().call(message);
-        if (reply.isValid()) {
-            const QString activeOutputName = reply.value();
-            screenIt = std::find_if(screens.cbegin(), screens.cend(), [&activeOutputName](QScreen *screen) {
-                return screen->name() == activeOutputName;
-            });
-        }
-    } else if (KWindowSystem::isPlatformX11()) {
-        screenIt = std::find_if(screens.cbegin(), screens.cend(), [](QScreen *screen) {
-            return screen->geometry().contains(QCursor::pos(screen));
-        });
-    }
-
-    QScreen *const shownOnScreen = screenIt != screens.cend() ? *screenIt : QGuiApplication::primaryScreen();
+    QScreen *const shownOnScreen = QGuiApplication::primaryScreen();
     setScreen(shownOnScreen);
 
     QMargins margins;
