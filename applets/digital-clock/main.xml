@@ -29,7 +29,7 @@
     </entry>
     <entry name="customDateFormat" type="string">
       <label>Custom date format string.</label>
-      <default>ddd d</default>
+      <default>ddd MMMM d</default>
     </entry>
     <entry name="autoFontAndSize" type="Bool">
       <label>Use Plasma default font and automatically determine font size.</label>
@@ -93,7 +93,7 @@
     </entry>
     <entry name="firstDayOfWeek" type="Int">
       <label>Force the calendar to use a specific week day as first day of a week. -1 means follow user locale, 0 is Sunday, 1 is Monday, etc.</label>
-      <default>-1</default>
+      <default>1</default>
     </entry>
     <entry name="enabledCalendarPlugins" type="StringList">
       <label>A list of plugins where additional calendar event data can be sourced.</label>
@@ -110,7 +110,7 @@
         <choice name="BesideTime" />
         <choice name="BelowTime" />
       </choices>
-      <default>0</default>
+      <default>1</default>
     </entry>
   </group>
 </kcfg>
