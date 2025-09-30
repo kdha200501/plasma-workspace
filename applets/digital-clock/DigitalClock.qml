@@ -211,9 +211,6 @@ MouseArea {
 
                 dateLabel.font.pixelSize: 1024
                 dateLabel.verticalAlignment: Text.AlignVCenter
-                // between date and time; they are styled the same, so
-                // a space is more appropriate than smallSpacing
-                dateLabel.anchors.rightMargin: timeMetrics.advanceWidth(" ")
                 dateLabel.fontSizeMode: Text.VerticalFit
 
                 timeLabel.height: sizehelper.height
@@ -241,6 +238,17 @@ MouseArea {
 
                 anchors.right: labelsGrid.left
                 anchors.verticalCenter: labelsGrid.verticalCenter
+            }
+
+            // Must come after AnchorChanges for dateLabel, because AnchorChanges
+            // may reset rightMargin to 0 when it applies anchors.right. The
+            // old PropertyChanges target: syntax is intentional here so Qt
+            // applies this change last.
+            PropertyChanges {
+                target: dateLabel
+                // between date and time; they are styled the same, so
+                // a space is more appropriate than smallSpacing
+                anchors.rightMargin: timeMetrics.advanceWidth(" ")
             }
         },
 
@@ -408,13 +416,14 @@ MouseArea {
                 id: timeLabel
 
                 font {
-                    family: fontHelper.font.family
+                    family: virtueFont.font.family
                     weight: fontHelper.font.weight
                     italic: fontHelper.font.italic
                     features: { "tnum": 1 }
                     pixelSize: 1024
                 }
                 minimumPixelSize: 1
+                color: "black"
 
                 text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? main.timeFormatWithSeconds : main.timeFormat)
                 textFormat: Text.PlainText
@@ -443,11 +452,12 @@ MouseArea {
 
             visible: Plasmoid.configuration.showDate
 
-            font.family: timeLabel.font.family
+            font.family: virtueFont.font.family
             font.weight: timeLabel.font.weight
             font.italic: timeLabel.font.italic
             font.pixelSize: 1024
             minimumPixelSize: 1
+            color: "black"
 
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -462,7 +472,7 @@ MouseArea {
     PlasmaComponents.Label {
         id: sizehelper
 
-        font.family: timeLabel.font.family
+        font.family: virtueFont.font.family
         font.weight: timeLabel.font.weight
         font.italic: timeLabel.font.italic
         minimumPixelSize: 1
@@ -477,22 +487,31 @@ MouseArea {
 
         height: 1024
 
-        font.family: (Plasmoid.configuration.autoFontAndSize || Plasmoid.configuration.fontFamily.length === 0) ? Kirigami.Theme.defaultFont.family : Plasmoid.configuration.fontFamily
+        font.family: virtueFont.font.family
         font.weight: Plasmoid.configuration.autoFontAndSize ? Kirigami.Theme.defaultFont.weight : Plasmoid.configuration.fontWeight
         font.italic: Plasmoid.configuration.autoFontAndSize ? Kirigami.Theme.defaultFont.italic : Plasmoid.configuration.italicText
-        font.pixelSize: Plasmoid.configuration.autoFontAndSize ? 3 * Kirigami.Theme.defaultFont.pixelSize : main.pointToPixel(Plasmoid.configuration.fontSize)
+        font.pixelSize: 13
         fontSizeMode: Text.VerticalFit
 
         visible: false
         textFormat: Text.PlainText
     }
 
+    FontLoader {
+        id: virtueFont
+        source: "qrc:/qt/qml/plasma/applet/org/kde/plasma/digitalclock/virtue.ttf"
+    }
+
     FontMetrics {
         id: timeMetrics
 
-        font.family: timeLabel.font.family
+        font.family: virtueFont.font.family
         font.weight: timeLabel.font.weight
         font.italic: timeLabel.font.italic
+        // Use the actual display size so advanceWidth returns scaled values.
+        // sizehelper.height is the rendered font pixel size in panel modes;
+        // fall back to fontHelper's configured size when the state hasn't set it yet.
+        font.pixelSize: sizehelper.height > 0 ? sizehelper.height : fontHelper.font.pixelSize
     }
 
     // Qt's QLocale does not offer any modular time creating like Klocale did
