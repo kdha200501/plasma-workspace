@@ -13,5 +13,6 @@ plasma_add_applet(org.kde.plasma.digitalclock
         config.qml
     RESOURCES
         main.xml
+        virtue.ttf
     GENERATE_APPLET_CLASS
 )
