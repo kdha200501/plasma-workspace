@@ -157,20 +157,8 @@ void View::showEvent(QShowEvent *event)
 
 void View::positionOnScreen()
 {
-    const auto screens = QGuiApplication::screens();
-    if (m_floating) {
-        auto message = QDBusMessage::createMethodCall(u"org.kde.KWin"_s, u"/KWin"_s, u"org.kde.KWin"_s, u"activeOutputName"_s);
-        QDBusReply<QString> reply = QDBusConnection::sessionBus().call(message);
-        if (reply.isValid()) {
-            const QString activeOutputName = reply.value();
-            const auto screenIt = std::ranges::find_if(screens, [&activeOutputName](QScreen *screen) {
-                return screen->name() == activeOutputName;
-            });
-            if (screenIt != screens.end()) {
-                setScreen(*screenIt);
-            }
-        }
-    }
+    QScreen *const shownOnScreen = QGuiApplication::primaryScreen();
+    setScreen(shownOnScreen);
 
     auto layerWindow = LayerShellQt::Window::get(this);
     layerWindow->setAnchors(LayerShellQt::Window::AnchorTop);
@@ -178,11 +166,7 @@ void View::positionOnScreen()
     layerWindow->setScope(u"krunner"_s);
     layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
     layerWindow->setMargins(margins());
-    if (m_floating) {
-        layerWindow->setScreen(screen());
-    } else {
-        layerWindow->setWantsToBeOnActiveScreen(true);
-    }
+    layerWindow->setScreen(shownOnScreen);
 }
 
 void View::toggleDisplay()
