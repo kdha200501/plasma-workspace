@@ -211,9 +211,6 @@ MouseArea {
 
                 dateLabel.font.pixelSize: 1024
                 dateLabel.verticalAlignment: Text.AlignVCenter
-                // between date and time; they are styled the same, so
-                // a space is more appropriate than smallSpacing
-                dateLabel.anchors.rightMargin: timeMetrics.advanceWidth(" ")
                 dateLabel.fontSizeMode: Text.VerticalFit
 
                 timeLabel.height: sizehelper.height
@@ -241,6 +238,17 @@ MouseArea {
 
                 anchors.right: labelsGrid.left
                 anchors.verticalCenter: labelsGrid.verticalCenter
+            }
+
+            // Must come after AnchorChanges for dateLabel, because AnchorChanges
+            // may reset rightMargin to 0 when it applies anchors.right. The
+            // old PropertyChanges target: syntax is intentional here so Qt
+            // applies this change last.
+            PropertyChanges {
+                target: dateLabel
+                // between date and time; they are styled the same, so
+                // a space is more appropriate than smallSpacing
+                anchors.rightMargin: timeMetrics.advanceWidth(" ")
             }
         },
 
@@ -493,6 +501,10 @@ MouseArea {
         font.family: timeLabel.font.family
         font.weight: timeLabel.font.weight
         font.italic: timeLabel.font.italic
+        // Use the actual display size so advanceWidth returns scaled values.
+        // sizehelper.height is the rendered font pixel size in panel modes;
+        // fall back to fontHelper's configured size when the state hasn't set it yet.
+        font.pixelSize: sizehelper.height > 0 ? sizehelper.height : fontHelper.font.pixelSize
     }
 
     // Qt's QLocale does not offer any modular time creating like Klocale did
