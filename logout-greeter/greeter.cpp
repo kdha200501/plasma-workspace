@@ -12,6 +12,8 @@
 #include <QApplication>
 #include <QDebug>
 #include <QScreen>
+#include <QQuickView>
+#include <KWindowEffects>
 
 #include "shutdowndlg.h"
 
@@ -54,8 +56,24 @@ void Greeter::init()
     }
 
     setupWaylandIntegration();
-    const auto screens = qApp->screens();
+    QList<QScreen *> screens = QGuiApplication::screens(); // make a mutable copy
+    QScreen *primary = QGuiApplication::primaryScreen();
+    screens.removeOne(primary);
+    screens.append(primary); // render on primary screen last
+
     for (QScreen *screen : screens) {
+        if (primary != screen) {
+            QQuickView *backdrop = new QQuickView();
+            backdrop->setScreen(screen);
+            backdrop->setResizeMode(QQuickView::SizeRootObjectToView);
+            backdrop->setColor(Qt::black);
+            backdrop->setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+            backdrop->showFullScreen();
+            KWindowEffects::enableBackgroundContrast(backdrop, true, 0.4, 0.3, 1.7);
+            KWindowEffects::enableBlurBehind(backdrop, true);
+            continue;
+        }
+
         adoptScreen(screen);
     }
     connect(qApp, &QGuiApplication::screenAdded, this, &Greeter::adoptScreen);
