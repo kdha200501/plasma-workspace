@@ -51,7 +51,9 @@ AppMenuModel::AppMenuModel(QObject *parent)
                 Q_UNUSED(topLeft)
                 Q_UNUSED(bottomRight)
                 if (roles.contains(TaskManager::AbstractTasksModel::ApplicationMenuObjectPath)
-                    || roles.contains(TaskManager::AbstractTasksModel::ApplicationMenuServiceName) || roles.isEmpty()) {
+                    || roles.contains(TaskManager::AbstractTasksModel::ApplicationMenuServiceName)
+                    || roles.contains(Qt::DecorationRole)
+                    || roles.isEmpty()) {
                     onActiveWindowChanged();
                 }
             });
@@ -152,6 +154,16 @@ void AppMenuModel::setScreenGeometry(QRect geometry)
     m_tasksModel->setScreenGeometry(geometry);
 }
 
+QIcon AppMenuModel::activeAppIcon() const
+{
+    return m_activeAppIcon;
+}
+
+bool AppMenuModel::hasActiveWindow() const
+{
+    return m_hasActiveWindow;
+}
+
 int AppMenuModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
@@ -201,6 +213,19 @@ void AppMenuModel::onActiveWindowChanged()
     }
 
     const QModelIndex activeTaskIndex = m_tasksModel->activeTask();
+
+    const bool hasActive = activeTaskIndex.isValid();
+    if (m_hasActiveWindow != hasActive) {
+        m_hasActiveWindow = hasActive;
+        Q_EMIT hasActiveWindowChanged();
+    }
+
+    const QIcon icon = hasActive ? m_tasksModel->data(activeTaskIndex, Qt::DecorationRole).value<QIcon>() : QIcon();
+    if (m_activeAppIcon.cacheKey() != icon.cacheKey()) {
+        m_activeAppIcon = icon;
+        Q_EMIT activeAppIconChanged();
+    }
+
     const QString objectPath = m_tasksModel->data(activeTaskIndex, TaskManager::AbstractTasksModel::ApplicationMenuObjectPath).toString();
     const QString serviceName = m_tasksModel->data(activeTaskIndex, TaskManager::AbstractTasksModel::ApplicationMenuServiceName).toString();
     updateApplicationMenu(serviceName, objectPath);
