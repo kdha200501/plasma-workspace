@@ -9,6 +9,7 @@
 #include <KWindowSystem>
 #include <QAbstractListModel>
 #include <QAction>
+#include <QIcon>
 #include <QPointer>
 #include <QRect>
 #include <QStringList>
@@ -36,6 +37,9 @@ class AppMenuModel : public QAbstractListModel
     Q_PROPERTY(Plasma::Types::ItemStatus containmentStatus MEMBER m_containmentStatus NOTIFY containmentStatusChanged)
     Q_PROPERTY(QRect screenGeometry READ screenGeometry WRITE setScreenGeometry NOTIFY screenGeometryChanged)
 
+    Q_PROPERTY(QIcon activeAppIcon READ activeAppIcon NOTIFY activeAppIconChanged)
+    Q_PROPERTY(bool hasActiveWindow READ hasActiveWindow NOTIFY hasActiveWindowChanged)
+
 public:
     explicit AppMenuModel(QObject *parent = nullptr);
     ~AppMenuModel() override;
@@ -43,6 +47,7 @@ public:
     enum AppMenuRole {
         MenuRole = Qt::UserRole + 1, // TODO this should be Qt::DisplayRole
         ActionRole,
+        IconSourceRole,
     };
 
     QVariant data(const QModelIndex &index, int role) const override;
@@ -50,6 +55,10 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void updateApplicationMenu(const QString &serviceName, const QString &menuObjectPath);
+
+    // Prepend a persistent action (e.g. the system menu) before all app-menu
+    // entries.  The action is non-owning; the caller must keep it alive.
+    void setPrependedAction(QAction *action, const QString &iconSource = QString());
 
     bool menuAvailable() const;
     void setMenuAvailable(bool set);
@@ -64,6 +73,9 @@ public:
     QList<QAction *> flatActionList();
 
     bool eventFilter(QObject *watched, QEvent *event) override;
+
+    QIcon activeAppIcon() const;
+    bool hasActiveWindow() const;
 
 Q_SIGNALS:
     void requestActivateIndex(int index);
@@ -81,12 +93,20 @@ Q_SIGNALS:
     void containmentStatusChanged();
     void screenGeometryChanged();
     void visibleChanged();
+    void activeAppIconChanged();
+    void hasActiveWindowChanged();
 
 private:
     bool m_menuAvailable;
     bool m_allScreens = true;
     bool m_updatePending = false;
     bool m_visible = true;
+    bool m_hasActiveWindow = false;
+
+    QIcon m_activeAppIcon;
+
+    QPointer<QAction> m_prependedAction;
+    QString m_prependedIconSource;
 
     Plasma::Types::ItemStatus m_containmentStatus = Plasma::Types::PassiveStatus;
     TaskManager::TasksModel *m_tasksModel;
