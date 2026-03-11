@@ -59,8 +59,10 @@ PlasmoidItem {
         Plasmoid.status: {
             if (appMenuModel.menuAvailable && Plasmoid.currentIndex > -1 && buttonRepeater.count > 0) {
                 return PlasmaCore.Types.NeedsAttentionStatus;
+            } else if (appMenuModel.hasActiveWindow) {
+                return PlasmaCore.Types.ActiveStatus;
             } else {
-                return buttonRepeater.count > 0 || Plasmoid.configuration.compactView ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.HiddenStatus;
+                return PlasmaCore.Types.ActiveStatus;
             }
         }
 
@@ -101,7 +103,7 @@ PlasmoidItem {
 
         PlasmaComponents3.ToolButton {
             id: noMenuPlaceholder
-            visible: buttonRepeater.count === 0
+            visible: false
             text: Plasmoid.title
             Layout.fillWidth: root.vertical
             Layout.fillHeight: !root.vertical
@@ -109,21 +111,23 @@ PlasmoidItem {
 
         Repeater {
             id: buttonRepeater
-            model: appMenuModel.visible ? appMenuModel : null
+            model: appMenuModel
 
             MenuDelegate {
                 required property int index
                 required property string activeMenu
                 required property PlasmaCore.Action activeActions
+                required property string activeIconSource
                 readonly property int buttonIndex: index
 
                 Layout.fillWidth: root.vertical
                 Layout.fillHeight: !root.vertical
                 text: activeMenu
+                menuIconSource: activeIconSource
                 Kirigami.MnemonicData.active: altState.pressed
 
                 down: Plasmoid.currentIndex === index
-                visible: text !== "" && (activeActions?.visible ?? false)
+                visible: (activeIconSource !== "" || text !== "") && (activeActions?.visible ?? true)
 
                 menuIsOpen: Plasmoid.currentIndex !== -1
                 onActivated: Plasmoid.trigger(this, index)
@@ -147,7 +151,7 @@ PlasmoidItem {
         id: appMenuModel
         containmentStatus: Plasmoid.containment.status
         screenGeometry: root.screenGeometry
-        allScreens: Plasmoid.configuration.allScreens
+        allScreens: false
         onRequestActivateIndex: Plasmoid.requestActivateIndex(index)
         Component.onCompleted: {
             Plasmoid.model = appMenuModel;
