@@ -7,10 +7,13 @@ plasma_add_applet(org.kde.plasma.appmenu
         qml/main.qml
         qml/MenuDelegate.qml
     CPP_SOURCES
+        applauncherhelper.cpp
         appmenuapplet.cpp
         appmenumodel.cpp
     RESOURCES
         main.xml
+        system-menu.svg
+        virtue.ttf
     QML_ARGS DEPENDENCIES QtCore org.kde.plasma.core
 )
 
@@ -22,6 +25,7 @@ target_link_libraries(org.kde.plasma.appmenu PRIVATE
     Plasma::Plasma
     KF6::WindowSystem
     KF6::I18n
+    KF6::KIOGui
     PW::LibTaskManager
     dbusmenuqt
 )

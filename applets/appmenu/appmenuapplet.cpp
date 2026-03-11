@@ -10,7 +10,10 @@
 #include <QAction>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
+#include <QDBusInterface>
+#include <QFontDatabase>
 #include <QKeyEvent>
+#include <KIO/CommandLauncherJob>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QQuickItem>
@@ -65,6 +68,74 @@ AppMenuApplet::~AppMenuApplet() = default;
 
 void AppMenuApplet::init()
 {
+    const int fontId = QFontDatabase::addApplicationFont(
+        QStringLiteral(":/qt/qml/plasma/applet/org/kde/plasma/appmenu/virtue.ttf"));
+    const QStringList families = QFontDatabase::applicationFontFamilies(fontId);
+    if (!families.isEmpty()) {
+        m_menuFont = QFont(families.first(), 10);
+    }
+    qApp->installEventFilter(this);
+
+    // Build the system menu (Apple-menu equivalent).
+    m_systemMenu = std::make_unique<QMenu>();
+    m_systemMenuAction = new QAction(this);
+    m_systemMenuAction->setMenu(m_systemMenu.get());
+
+    auto addAction = [&](const QString &text, std::function<void()> slot) {
+        QAction *a = m_systemMenu->addAction(text);
+        connect(a, &QAction::triggered, this, slot);
+    };
+
+    addAction(QStringLiteral("About This Mac"), [] {
+        auto *job = new KIO::CommandLauncherJob(QStringLiteral("kinfocenter"));
+        job->start();
+    });
+    m_systemMenu->addSeparator();
+    addAction(QStringLiteral("System Preferences…"), [] {
+        auto *job = new KIO::CommandLauncherJob(QStringLiteral("systemsettings"));
+        job->start();
+    });
+    addAction(QStringLiteral("App Store"), [] {
+        auto *job = new KIO::CommandLauncherJob(QStringLiteral("plasma-discover"));
+        job->start();
+    });
+    m_systemMenu->addSeparator();
+    addAction(QStringLiteral("Sleep"), [] {
+        QDBusInterface(QStringLiteral("org.kde.Solid.PowerManagement"),
+                       QStringLiteral("/org/kde/Solid/PowerManagement/Actions/SuspendSession"),
+                       QStringLiteral("org.kde.Solid.PowerManagement.Actions.SuspendSession"),
+                       QDBusConnection::sessionBus())
+            .asyncCall(QStringLiteral("suspendToRam"));
+    });
+    addAction(QStringLiteral("Restart…"), [] {
+        QDBusInterface(QStringLiteral("org.kde.LogoutPrompt"),
+                       QStringLiteral("/LogoutPrompt"),
+                       QStringLiteral("org.kde.LogoutPrompt"),
+                       QDBusConnection::sessionBus())
+            .asyncCall(QStringLiteral("promptReboot"));
+    });
+    addAction(QStringLiteral("Shut Down…"), [] {
+        QDBusInterface(QStringLiteral("org.kde.LogoutPrompt"),
+                       QStringLiteral("/LogoutPrompt"),
+                       QStringLiteral("org.kde.LogoutPrompt"),
+                       QDBusConnection::sessionBus())
+            .asyncCall(QStringLiteral("promptShutDown"));
+    });
+    m_systemMenu->addSeparator();
+    addAction(QStringLiteral("Lock Screen"), [] {
+        QDBusInterface(QStringLiteral("org.freedesktop.ScreenSaver"),
+                       QStringLiteral("/ScreenSaver"),
+                       QStringLiteral("org.freedesktop.ScreenSaver"),
+                       QDBusConnection::sessionBus())
+            .asyncCall(QStringLiteral("Lock"));
+    });
+    addAction(QStringLiteral("Log Out…"), [] {
+        QDBusInterface(QStringLiteral("org.kde.LogoutPrompt"),
+                       QStringLiteral("/LogoutPrompt"),
+                       QStringLiteral("org.kde.LogoutPrompt"),
+                       QDBusConnection::sessionBus())
+            .asyncCall(QStringLiteral("promptLogout"));
+    });
 }
 
 QAbstractItemModel *AppMenuApplet::model() const
@@ -76,6 +147,10 @@ void AppMenuApplet::setModel(QAbstractItemModel *model)
 {
     if (m_model != model) {
         m_model = model;
+        if (auto *appModel = qobject_cast<AppMenuModel *>(m_model)) {
+            appModel->setPrependedAction(m_systemMenuAction,
+                QStringLiteral("system-menu.svg"));
+        }
         Q_EMIT modelChanged();
     }
 }
@@ -143,6 +218,17 @@ void AppMenuApplet::onMenuAboutToHide()
     menuAction->setMenu(m_sourceMenu);
     setCurrentIndex(-1);
 }
+
+static void applyFontToMenu(QMenu *menu, const QFont &font)
+{
+    menu->setFont(font);
+    for (QAction *action : menu->actions()) {
+        if (QMenu *submenu = action->menu()) {
+            applyFontToMenu(submenu, font);
+        }
+    }
+}
+
 
 Qt::Edges edgeFromLocation(Plasma::Types::Location location)
 {
@@ -223,6 +309,10 @@ void AppMenuApplet::trigger(QQuickItem *ctx, int idx)
         const Qt::Edges edges = edgeFromLocation(location());
         m_currentMenu->setProperty("_breeze_menu_seamless_edges", QVariant::fromValue(edges));
 
+        if (!m_menuFont.family().isEmpty()) {
+            applyFontToMenu(m_currentMenu, m_menuFont);
+        }
+
         if (location() == Plasma::Types::TopEdge) {
             pos.setY(pos.y() + ctx->height());
         }
@@ -236,7 +326,6 @@ void AppMenuApplet::trigger(QQuickItem *ctx, int idx)
             if (m_currentMenu->isVisible()) {
                 m_currentMenu->move(pos);
             } else {
-                m_currentMenu->installEventFilter(this);
                 m_currentMenu->winId(); // create window handle
                 m_currentMenu->windowHandle()->setTransientParent(ctx->window());
                 m_currentMenu->popup(pos);
@@ -264,10 +353,16 @@ void AppMenuApplet::trigger(QQuickItem *ctx, int idx)
 // FIXME TODO doesn't work on submenu
 bool AppMenuApplet::eventFilter(QObject *watched, QEvent *event)
 {
-    auto *menu = qobject_cast<QMenu *>(watched);
-    if (!menu) {
+    if (event->type() == QEvent::Show) {
         return false;
     }
+
+    // Keyboard navigation and mouse-hover tracking only apply to m_currentMenu.
+    if (watched != m_currentMenu) {
+        return false;
+    }
+
+    auto *menu = static_cast<QMenu *>(watched);
 
     if (event->type() == QEvent::KeyPress) {
         auto *e = static_cast<QKeyEvent *>(event);
