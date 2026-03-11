@@ -51,7 +51,9 @@ AppMenuModel::AppMenuModel(QObject *parent)
                 Q_UNUSED(topLeft)
                 Q_UNUSED(bottomRight)
                 if (roles.contains(TaskManager::AbstractTasksModel::ApplicationMenuObjectPath)
-                    || roles.contains(TaskManager::AbstractTasksModel::ApplicationMenuServiceName) || roles.isEmpty()) {
+                    || roles.contains(TaskManager::AbstractTasksModel::ApplicationMenuServiceName)
+                    || roles.contains(Qt::DecorationRole)
+                    || roles.isEmpty()) {
                     onActiveWindowChanged();
                 }
             });
@@ -168,14 +170,23 @@ void AppMenuModel::setScreenGeometry(QRect geometry)
     m_tasksModel->setScreenGeometry(geometry);
 }
 
+QIcon AppMenuModel::activeAppIcon() const
+{
+    return m_activeAppIcon;
+}
+
+bool AppMenuModel::hasActiveWindow() const
+{
+    return m_hasActiveWindow;
+}
+
 int AppMenuModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    if (!m_menuAvailable || !m_menu) {
-        return 0;
-    }
-
-    return m_menu->actions().count() + (m_searchAction ? 1 : 0);
+    const int appMenuCount = (m_menuAvailable && m_menu)
+        ? m_menu->actions().count() + (m_searchAction ? 1 : 0)
+        : 0;
+    return appMenuCount + (m_prependedAction ? 1 : 0);
 }
 
 void AppMenuModel::removeSearchActionsFromMenu()
@@ -217,6 +228,19 @@ void AppMenuModel::onActiveWindowChanged()
     }
 
     const QModelIndex activeTaskIndex = m_tasksModel->activeTask();
+
+    const bool hasActive = activeTaskIndex.isValid();
+    if (m_hasActiveWindow != hasActive) {
+        m_hasActiveWindow = hasActive;
+        Q_EMIT hasActiveWindowChanged();
+    }
+
+    const QIcon icon = hasActive ? m_tasksModel->data(activeTaskIndex, Qt::DecorationRole).value<QIcon>() : QIcon();
+    if (m_activeAppIcon.cacheKey() != icon.cacheKey()) {
+        m_activeAppIcon = icon;
+        Q_EMIT activeAppIconChanged();
+    }
+
     const QString objectPath = m_tasksModel->data(activeTaskIndex, TaskManager::AbstractTasksModel::ApplicationMenuObjectPath).toString();
     const QString serviceName = m_tasksModel->data(activeTaskIndex, TaskManager::AbstractTasksModel::ApplicationMenuServiceName).toString();
     updateApplicationMenu(serviceName, objectPath);
@@ -227,6 +251,7 @@ QHash<int, QByteArray> AppMenuModel::roleNames() const
     QHash<int, QByteArray> roleNames;
     roleNames[MenuRole] = QByteArrayLiteral("activeMenu");
     roleNames[ActionRole] = QByteArrayLiteral("activeActions");
+    roleNames[IconSourceRole] = QByteArrayLiteral("activeIconSource");
     return roleNames;
 }
 
@@ -245,8 +270,32 @@ QList<QAction *> AppMenuModel::flatActionList()
     return ret;
 }
 
+void AppMenuModel::setPrependedAction(QAction *action, const QString &iconSource)
+{
+    m_prependedAction = action;
+    m_prependedIconSource = iconSource;
+    Q_EMIT modelNeedsUpdate();
+}
+
 QVariant AppMenuModel::data(const QModelIndex &index, int role) const
 {
+    const int row = index.row();
+    const int offset = m_prependedAction ? 1 : 0;
+
+    // Row 0 when a prepended action exists (e.g. the system menu)
+    if (row == 0 && m_prependedAction) {
+        if (role == MenuRole) {
+            return m_prependedAction->text();
+        } else if (role == ActionRole) {
+            return QVariant::fromValue(m_prependedAction.data());
+        } else if (role == IconSourceRole) {
+            return m_prependedIconSource;
+        }
+        return {};
+    }
+
+    const int adjustedRow = row - offset;
+
     if (!m_menuAvailable || !m_menu) {
         return {};
     }
@@ -260,22 +309,25 @@ QVariant AppMenuModel::data(const QModelIndex &index, int role) const
     }
 
     const auto actions = m_menu->actions();
-    const int row = index.row();
-    if (row == actions.count() && m_searchAction) {
+    if (adjustedRow == actions.count() && m_searchAction) {
         if (role == MenuRole) {
             return m_searchAction->text();
         } else if (role == ActionRole) {
             return QVariant::fromValue(m_searchAction.data());
+        } else if (role == IconSourceRole) {
+            return QString();
         }
     }
-    if (row >= actions.count()) {
+    if (adjustedRow >= actions.count()) {
         return {};
     }
 
-    if (role == MenuRole) { // TODO this should be Qt::DisplayRole
-        return actions.at(row)->text();
+    if (role == MenuRole) {
+        return actions.at(adjustedRow)->text();
     } else if (role == ActionRole) {
-        return QVariant::fromValue(actions.at(row));
+        return QVariant::fromValue(actions.at(adjustedRow));
+    } else if (role == IconSourceRole) {
+        return QString();
     }
 
     return {};
@@ -330,7 +382,8 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
                     if (m_menuAvailable && m_menu) {
                         const int actionIdx = m_menu->actions().indexOf(a);
                         if (actionIdx > -1) {
-                            const QModelIndex modelIdx = index(actionIdx, 0);
+                            const int offset = m_prependedAction ? 1 : 0;
+                            const QModelIndex modelIdx = index(actionIdx + offset, 0);
                             Q_EMIT dataChanged(modelIdx, modelIdx);
                         }
                     }

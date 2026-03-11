@@ -9,6 +9,7 @@
 #include <Plasma/Applet>
 
 #include <QAbstractItemModel>
+#include <QFont>
 #include <QPointer>
 
 class QQuickItem;
@@ -73,5 +74,7 @@ private:
     QPointer<QMenu> m_sourceMenu;
     QPointer<QQuickItem> m_buttonGrid;
     QPointer<QAbstractItemModel> m_model;
+    std::unique_ptr<QMenu> m_systemMenu;
+    QAction *m_systemMenuAction = nullptr;
     static int s_refs;
 };
