@@ -35,21 +35,7 @@ AbstractButton {
     // other "outside of the menu" click event.
     onPressed: activated()
 
-    enum State {
-        Rest,
-        Hover,
-        Down
-    }
-
-    property int menuState: {
-        // can't trust hovered state while QMenu is grabbing mouse pointer.
-        if (down) {
-            return MenuDelegate.State.Down;
-        } else if (hovered && !menuIsOpen) {
-            return MenuDelegate.State.Hover;
-        }
-        return MenuDelegate.State.Rest;
-    }
+    readonly property bool isHighlighted: down
 
     Kirigami.MnemonicData.controlType: Kirigami.MnemonicData.SecondaryControl
     Kirigami.MnemonicData.label: text
@@ -61,14 +47,24 @@ AbstractButton {
 
     Accessible.description: i18nc("@info:usagetip", "Open a menu")
 
-    background: KSvg.FrameSvgItem {
-        id: rest
-        imagePath: "widgets/menubaritem"
-        prefix: switch (controlRoot.menuState) {
-            case MenuDelegate.State.Down: return "pressed";
-            case MenuDelegate.State.Hover: return "hover";
-            case MenuDelegate.State.Rest: return "normal";
+    background: Item {
+        KSvg.FrameSvgItem {
+            id: rest
+            anchors.fill: parent
+            imagePath: "widgets/menubaritem"
+            prefix: "normal"
+            visible: !controlRoot.isHighlighted
         }
+        Rectangle {
+            anchors.fill: parent
+            color: "#363698"
+            visible: controlRoot.isHighlighted
+        }
+    }
+
+    FontLoader {
+        id: virtueFont
+        source: "qrc:/qt/qml/plasma/applet/org/kde/plasma/appmenu/virtue.ttf"
     }
 
     contentItem: PC3.Label {
@@ -76,6 +72,8 @@ AbstractButton {
         textFormat: Text.StyledText
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
-        color: controlRoot.menuState === MenuDelegate.State.Rest ? Kirigami.Theme.textColor : Kirigami.Theme.highlightedTextColor
+        color: controlRoot.isHighlighted ? "white" : "black"
+        font.family: virtueFont.font.family
+        font.pixelSize: 13
     }
 }

@@ -15,7 +15,9 @@ import QtQml
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.private.keyboardindicator as KeyboardIndicator
+import org.kde.plasma.private.sessions
 import org.kde.plasma.components as PlasmaComponents3
+import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 import plasma.applet.org.kde.plasma.appmenu
 
@@ -31,6 +33,10 @@ PlasmoidItem {
 
     Plasmoid.constraintHints: Plasmoid.CanFillArea
     preferredRepresentation: Plasmoid.configuration.compactView ? compactRepresentation : fullRepresentation
+
+    SessionManagement {
+        id: session
+    }
 
     // Only exists because the default CompactRepresentation doesn't expose a
     // way to mark its icon as disabled.
@@ -59,8 +65,10 @@ PlasmoidItem {
         Plasmoid.status: {
             if (appMenuModel.menuAvailable && Plasmoid.currentIndex > -1 && buttonRepeater.count > 0) {
                 return PlasmaCore.Types.NeedsAttentionStatus;
+            } else if (appMenuModel.hasActiveWindow) {
+                return PlasmaCore.Types.ActiveStatus;
             } else {
-                return buttonRepeater.count > 0 || Plasmoid.configuration.compactView ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.HiddenStatus;
+                return PlasmaCore.Types.ActiveStatus;
             }
         }
 
@@ -99,9 +107,38 @@ PlasmoidItem {
             }
         }
 
+        Item {
+            id: powerButton
+            Layout.fillHeight: true
+            Layout.preferredWidth: height + 12
+            Layout.topMargin: 3
+            Layout.bottomMargin: 3
+            Layout.alignment: Qt.AlignVCenter
+
+            readonly property bool isHighlighted: powerMenu.status !== PlasmaExtras.Menu.Closed
+
+            Rectangle {
+                anchors.fill: parent
+                color: "#363698"
+                visible: powerButton.isHighlighted
+            }
+
+            Image {
+                anchors.fill: parent
+                anchors.margins: 2
+                source: Qt.resolvedUrl("system-menu.svg")
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+            }
+
+            TapHandler {
+                onTapped: powerMenu.openRelative()
+            }
+        }
+
         PlasmaComponents3.ToolButton {
             id: noMenuPlaceholder
-            visible: buttonRepeater.count === 0
+            visible: false
             text: Plasmoid.title
             Layout.fillWidth: root.vertical
             Layout.fillHeight: !root.vertical
@@ -143,11 +180,65 @@ PlasmoidItem {
         }
     }
 
+    // Power menu - placed outside the GridLayout to avoid clipping
+    PlasmaExtras.Menu {
+        id: powerMenu
+        visualParent: powerButton
+        placement: PlasmaExtras.Menu.BottomPosedLeftAlignedPopup
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("About This Mac")
+            onClicked: AppLauncherHelper.launchApplication("kinfocenter")
+        }
+
+        PlasmaExtras.MenuItem {
+            separator: true
+        }
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("System Preferences")
+            onClicked: AppLauncherHelper.launchApplication("systemsettings")
+        }
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("App Store")
+            onClicked: AppLauncherHelper.launchApplication("plasma-discover")
+        }
+
+        PlasmaExtras.MenuItem {
+            separator: true
+        }
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("Sleep")
+            onClicked: session.suspend()
+        }
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("Restart")
+            onClicked: session.requestReboot()
+        }
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("Shut Down")
+            onClicked: session.requestShutdown()
+        }
+
+        PlasmaExtras.MenuItem {
+            separator: true
+        }
+
+        PlasmaExtras.MenuItem {
+            text: qsTr("Lock Screen")
+            onClicked: session.requestLogout()
+        }
+    }
+
     AppMenuModel {
         id: appMenuModel
         containmentStatus: Plasmoid.containment.status
         screenGeometry: root.screenGeometry
-        allScreens: Plasmoid.configuration.allScreens
+        allScreens: false
         onRequestActivateIndex: Plasmoid.requestActivateIndex(index)
         Component.onCompleted: {
             Plasmoid.model = appMenuModel;
