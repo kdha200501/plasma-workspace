@@ -9,6 +9,7 @@
 #include <KWindowSystem>
 #include <QAbstractListModel>
 #include <QAction>
+#include <QIcon>
 #include <QPointer>
 #include <QRect>
 #include <QStringList>
@@ -32,6 +33,9 @@ class AppMenuModel : public QAbstractListModel
 
     Q_PROPERTY(Plasma::Types::ItemStatus containmentStatus MEMBER m_containmentStatus NOTIFY containmentStatusChanged)
     Q_PROPERTY(QRect screenGeometry READ screenGeometry WRITE setScreenGeometry NOTIFY screenGeometryChanged)
+
+    Q_PROPERTY(QIcon activeAppIcon READ activeAppIcon NOTIFY activeAppIconChanged)
+    Q_PROPERTY(bool hasActiveWindow READ hasActiveWindow NOTIFY hasActiveWindowChanged)
 
 public:
     explicit AppMenuModel(QObject *parent = nullptr);
@@ -57,6 +61,9 @@ public:
     void setScreenGeometry(QRect geometry);
     QList<QAction *> flatActionList();
 
+    QIcon activeAppIcon() const;
+    bool hasActiveWindow() const;
+
 Q_SIGNALS:
     void requestActivateIndex(int index);
     void bringToFocus(int index);
@@ -72,11 +79,16 @@ Q_SIGNALS:
     void containmentStatusChanged();
     void screenGeometryChanged();
     void visibleChanged();
+    void activeAppIconChanged();
+    void hasActiveWindowChanged();
 
 private:
     bool m_menuAvailable;
     bool m_updatePending = false;
     bool m_visible = true;
+    bool m_hasActiveWindow = false;
+
+    QIcon m_activeAppIcon;
 
     Plasma::Types::ItemStatus m_containmentStatus = Plasma::Types::PassiveStatus;
     TaskManager::TasksModel *m_tasksModel;
