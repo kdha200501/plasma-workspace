@@ -71,7 +71,7 @@ PanelView::PanelView(ShellCorona *corona, QScreen *targetScreen, QWindow *parent
         setScreenToFollow(targetScreen);
         setScreen(targetScreen);
     }
-    setColor(QColor(Qt::transparent));
+    setColor(QColor(220, 220, 220)); // HARDCODED: was QColor(Qt::transparent)
     setFlags(Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
     updateAdaptiveOpacityEnabled();
 
