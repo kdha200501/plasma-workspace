@@ -8,14 +8,20 @@
 #include "appmenumodel.h"
 
 #include <QAction>
+#include <QColor>
+#include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
+#include <QFontDatabase>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QProxyStyle>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QScreen>
+#include <QStyleOption>
 #include <QTimer>
 
 int AppMenuApplet::s_refs = 0;
@@ -65,6 +71,13 @@ AppMenuApplet::~AppMenuApplet() = default;
 
 void AppMenuApplet::init()
 {
+    const int fontId = QFontDatabase::addApplicationFont(
+        QStringLiteral(":/qt/qml/plasma/applet/org/kde/plasma/appmenu/virtue.ttf"));
+    const QStringList families = QFontDatabase::applicationFontFamilies(fontId);
+    if (!families.isEmpty()) {
+        m_menuFont = QFont(families.first(), 10);
+    }
+    qApp->installEventFilter(this);
 }
 
 QAbstractItemModel *AppMenuApplet::model() const
@@ -142,6 +155,61 @@ void AppMenuApplet::onMenuAboutToHide()
     auto menuAction = m_currentMenu->menuAction();
     menuAction->setMenu(m_sourceMenu);
     setCurrentIndex(-1);
+}
+
+static void applyFontToMenu(QMenu *menu, const QFont &font)
+{
+    menu->setFont(font);
+    for (QAction *action : menu->actions()) {
+        if (QMenu *submenu = action->menu()) {
+            applyFontToMenu(submenu, font);
+        }
+    }
+}
+
+class Mac9MenuStyle : public QProxyStyle
+{
+public:
+    using QProxyStyle::QProxyStyle;
+
+    void drawControl(ControlElement element, const QStyleOption *option,
+                     QPainter *painter, const QWidget *widget = nullptr) const override
+    {
+        if (element == CE_MenuItem) {
+            if (const auto *opt = qstyleoption_cast<const QStyleOptionMenuItem *>(option)) {
+                if (opt->menuItemType != QStyleOptionMenuItem::Separator
+                    && (opt->state & State_Selected)) {
+                    // Paint our own selection background.
+                    painter->fillRect(opt->rect, QColor(0x36, 0x36, 0x98));
+                    // Let the base style draw text/icon/arrow, but strip the
+                    // selected state so it doesn't paint its own highlight on top,
+                    // and force all text colour roles to white.
+                    QStyleOptionMenuItem modOpt = *opt;
+                    modOpt.state &= ~(State_Selected | State_MouseOver);
+                    modOpt.palette.setColor(QPalette::ButtonText, Qt::white);
+                    modOpt.palette.setColor(QPalette::Text, Qt::white);
+                    modOpt.palette.setColor(QPalette::WindowText, Qt::white);
+                    QProxyStyle::drawControl(element, &modOpt, painter, widget);
+                    return;
+                }
+            }
+        }
+        QProxyStyle::drawControl(element, option, painter, widget);
+    }
+};
+
+static void applyStyleToMenu(QMenu *menu)
+{
+    if (!dynamic_cast<Mac9MenuStyle *>(menu->style())) {
+        auto *style = new Mac9MenuStyle();
+        style->setParent(menu);
+        menu->setStyle(style);
+    }
+    for (QAction *action : menu->actions()) {
+        if (QMenu *submenu = action->menu()) {
+            applyStyleToMenu(submenu);
+        }
+    }
 }
 
 Qt::Edges edgeFromLocation(Plasma::Types::Location location)
@@ -223,6 +291,11 @@ void AppMenuApplet::trigger(QQuickItem *ctx, int idx)
         const Qt::Edges edges = edgeFromLocation(location());
         m_currentMenu->setProperty("_breeze_menu_seamless_edges", QVariant::fromValue(edges));
 
+        if (!m_menuFont.family().isEmpty()) {
+            applyFontToMenu(m_currentMenu, m_menuFont);
+        }
+        applyStyleToMenu(m_currentMenu);
+
         if (location() == Plasma::Types::TopEdge) {
             pos.setY(pos.y() + ctx->height());
         }
@@ -236,7 +309,6 @@ void AppMenuApplet::trigger(QQuickItem *ctx, int idx)
             if (m_currentMenu->isVisible()) {
                 m_currentMenu->move(pos);
             } else {
-                m_currentMenu->installEventFilter(this);
                 m_currentMenu->winId(); // create window handle
                 m_currentMenu->windowHandle()->setTransientParent(ctx->window());
                 m_currentMenu->popup(pos);
@@ -264,10 +336,21 @@ void AppMenuApplet::trigger(QQuickItem *ctx, int idx)
 // FIXME TODO doesn't work on submenu
 bool AppMenuApplet::eventFilter(QObject *watched, QEvent *event)
 {
-    auto *menu = qobject_cast<QMenu *>(watched);
-    if (!menu) {
+    // Apply Mac OS 9 style to any QMenu when it is first shown, including
+    // the power menu (PlasmaExtras.Menu) which is not managed by trigger().
+    if (event->type() == QEvent::Show) {
+        if (auto *menu = qobject_cast<QMenu *>(watched)) {
+            applyStyleToMenu(menu);
+        }
         return false;
     }
+
+    // Keyboard navigation and mouse-hover tracking only apply to m_currentMenu.
+    if (watched != m_currentMenu) {
+        return false;
+    }
+
+    auto *menu = static_cast<QMenu *>(watched);
 
     if (event->type() == QEvent::KeyPress) {
         auto *e = static_cast<QKeyEvent *>(event);

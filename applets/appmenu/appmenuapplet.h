@@ -9,6 +9,7 @@
 #include <Plasma/Applet>
 
 #include <QAbstractItemModel>
+#include <QFont>
 #include <QPointer>
 
 class QQuickItem;
@@ -69,6 +70,7 @@ private:
 
     int m_currentIndex = -1;
     int m_viewType = FullView;
+    QFont m_menuFont;
     QPointer<QMenu> m_currentMenu;
     QPointer<QMenu> m_sourceMenu;
     QPointer<QQuickItem> m_buttonGrid;
