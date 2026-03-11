@@ -54,10 +54,17 @@ AbstractButton {
     Kirigami.MnemonicData.controlType: Kirigami.MnemonicData.SecondaryControl
     Kirigami.MnemonicData.label: text
 
-    topPadding: rest.margins.top
-    leftPadding: rest.margins.left
-    rightPadding: rest.margins.right
-    bottomPadding: rest.margins.bottom
+    topPadding: menuIconSource !== "" ? 5 : rest.margins.top
+    leftPadding: menuIconSource !== "" ? 8 : rest.margins.left
+    rightPadding: menuIconSource !== "" ? 8 : rest.margins.right
+    bottomPadding: menuIconSource !== "" ? 5 : rest.margins.bottom
+
+    // For icon-only mode the Label has empty text → implicitContentWidth=0 → Layout
+    // would collapse the button. Explicitly declare the desired width so the Layout
+    // allocates enough space (padding + a square content area = padding + availableHeight).
+    implicitWidth: menuIconSource !== ""
+        ? leftPadding + availableHeight + rightPadding
+        : leftPadding + implicitContentWidth + rightPadding
 
     Accessible.description: i18nc("@info:usagetip", "Open a menu")
 
@@ -71,11 +78,33 @@ AbstractButton {
         }
     }
 
+    FontLoader {
+        id: virtueFont
+        source: "qrc:/qt/qml/plasma/applet/org/kde/plasma/appmenu/virtue.ttf"
+    }
+
+    property string menuIconSource: ""
+
     contentItem: PC3.Label {
-        text: controlRoot.Kirigami.MnemonicData.richTextLabel
+        id: menuLabel
+        text: controlRoot.menuIconSource === "" ? controlRoot.Kirigami.MnemonicData.richTextLabel : ""
         textFormat: Text.StyledText
         verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        color: controlRoot.menuState === MenuDelegate.State.Rest ? Kirigami.Theme.textColor : Kirigami.Theme.highlightedTextColor
+        color: controlRoot.menuState === MenuDelegate.State.Rest ? "black" : "white"
+        font.family: virtueFont.font.family
+        font.pixelSize: 13
+
+        Image {
+            id: iconImage
+            visible: controlRoot.menuIconSource !== ""
+            anchors.fill: parent
+            source: controlRoot.menuIconSource !== "" ? Qt.resolvedUrl(controlRoot.menuIconSource) : ""
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            sourceSize.width: 64
+            sourceSize.height: 64
+        }
     }
 }
