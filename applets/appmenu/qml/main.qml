@@ -59,8 +59,10 @@ PlasmoidItem {
         Plasmoid.status: {
             if (appMenuModel.menuAvailable && Plasmoid.currentIndex > -1 && buttonRepeater.count > 0) {
                 return PlasmaCore.Types.NeedsAttentionStatus;
+            } else if (appMenuModel.hasActiveWindow) {
+                return PlasmaCore.Types.ActiveStatus;
             } else {
-                return buttonRepeater.count > 0 || Plasmoid.configuration.compactView ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.HiddenStatus;
+                return PlasmaCore.Types.HiddenStatus;
             }
         }
 
@@ -99,9 +101,21 @@ PlasmoidItem {
             }
         }
 
+        Kirigami.Icon {
+            id: appIcon
+            visible: appMenuModel.hasActiveWindow
+            source: appMenuModel.hasActiveWindow ? appMenuModel.activeAppIcon : "system-file-manager"
+            Layout.fillHeight: true
+            Layout.preferredWidth: height
+            Layout.topMargin: 3
+            Layout.bottomMargin: 3
+            Layout.leftMargin: 3
+            Layout.alignment: Qt.AlignVCenter
+        }
+
         PlasmaComponents3.ToolButton {
             id: noMenuPlaceholder
-            visible: buttonRepeater.count === 0
+            visible: false
             text: Plasmoid.title
             Layout.fillWidth: root.vertical
             Layout.fillHeight: !root.vertical
