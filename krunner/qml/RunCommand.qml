@@ -30,6 +30,17 @@ ColumnLayout {
     LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: -runnerWindow.topPadding
+        anchors.bottomMargin: -runnerWindow.bottomPadding
+        anchors.leftMargin: -runnerWindow.leftPadding
+        anchors.rightMargin: -runnerWindow.rightPadding
+        color: "#801C1C1E"
+        radius: Kirigami.Units.cornerRadius
+        z: -1
+    }
+
     function isKeyUp(event) {
         return event.key === Qt.Key_Up || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_K)
     }
@@ -99,40 +110,14 @@ ColumnLayout {
     
     RowLayout {
         Layout.alignment: Qt.AlignTop
-        PlasmaComponents3.ToolButton {
-            visible: root.runnerWindow.helpEnabled
-            checkable: true
-            checked: root.query.startsWith("?")
-            // Reset if out quers starts with "?", otherwise set it to "?"
-            onClicked: root.query = root.query.startsWith("?") ? "" : "?"
-            icon.name: "question"
-            Accessible.name: i18n("Show Usage Help")
-            Accessible.description: i18n("Show Usage Help")
-            PlasmaComponents3.ToolTip {
-                text: i18n("Show Usage Help")
-            }
-        }
-        PlasmaComponents3.ToolButton {
-            visible: !!root.singleRunner
-            icon.name: results.singleRunnerMetaData.iconName
-            onClicked: () => {
-                root.singleRunner = ""
-                root.query = ""
-                fadedTextCompletion.text = ""
-                queryField.forceActiveFocus();
-            }
-            checked: true
-            Accessible.description: i18n("Showing only results from %1", results.singleRunnerMetaData.name)
-            PlasmaComponents3.ToolTip {
-                text: parent.Accessible.description
-            }
-        }
-        PlasmaExtras.SearchField {
+        PlasmaComponents3.TextField {
             id: queryField
             property bool allowCompletion: false
 
             Layout.minimumWidth: Kirigami.Units.gridUnit * 25
             Layout.maximumWidth: Kirigami.Units.gridUnit * 25
+            Layout.leftMargin: Kirigami.Units.largeSpacing
+            Layout.rightMargin: Kirigami.Units.largeSpacing
 
             activeFocusOnPress: true
             placeholderText: results.singleRunner ? i18nc("Textfield placeholder text, query specific KRunner plugin",
@@ -287,30 +272,6 @@ ColumnLayout {
                 }
             }
         }
-        PlasmaComponents3.ToolButton {
-            icon.name: "configure"
-            onClicked: {
-                root.runnerWindow.visible = false
-                KCMLauncher.open("plasma/kcms/desktop/kcm_krunnersettings")
-            }
-            Accessible.name: i18n("Configure")
-            Accessible.description: i18n("Configure KRunner Behavior")
-            visible: KAuthorized.authorizeControlModule("kcm_krunnersettings")
-            PlasmaComponents3.ToolTip {
-                text: i18n("Configure KRunner…")
-            }
-        }
-        PlasmaComponents3.ToolButton {
-            checkable: true
-            checked: root.runnerWindow.pinned
-            onToggled: root.runnerWindow.pinned = checked
-            icon.name: "window-pin"
-            Accessible.name: i18n("Pin")
-            Accessible.description: i18n("Pin Search")
-            PlasmaComponents3.ToolTip {
-                text: i18n("Keep Open")
-            }
-        }
     }
 
     PlasmaComponents3.ScrollView {
@@ -321,12 +282,29 @@ ColumnLayout {
         Layout.maximumHeight: Math.max(listView.contentHeight, results.contentHeight)
         // This replaces the ColumnLayout spacing
         Layout.topMargin: Kirigami.Units.smallSpacing
+        Layout.leftMargin: Kirigami.Units.largeSpacing
+        Layout.rightMargin: Kirigami.Units.largeSpacing
 
         Milou.ResultsView {
             id: results
             queryString: root.query
             queryField: queryField
             singleRunner: root.singleRunner
+
+            // Do not use the Kirigami highlight color
+            highlight: Item {}
+
+            delegate: Milou.ResultDelegate {
+                width: ListView.view.width
+                reversed: ListView.view.reversed
+                highlighted: ListView.isCurrentItem
+                background: Rectangle {
+                    color: "#505050"
+                    visible: parent.highlighted || parent.hovered
+                    opacity: 0.7
+                    radius: Kirigami.Units.cornerRadius
+                }
+            }
 
             Keys.onEscapePressed: {
                 root.runnerWindow.visible = false
@@ -352,6 +330,8 @@ ColumnLayout {
         Layout.maximumHeight: listView.contentHeight
         // This replaces the ColumnLayout spacing
         Layout.topMargin: Kirigami.Units.smallSpacing
+        Layout.leftMargin: Kirigami.Units.largeSpacing
+        Layout.rightMargin: Kirigami.Units.largeSpacing
         visible: root.query.length === 0 && listView.count > 0
         // don't accept keyboard input when not visible so the keys propagate to the other list
         enabled: visible
@@ -359,7 +339,7 @@ ColumnLayout {
         ListView {
             id: listView // needs this id so the delegate can access it
             keyNavigationWraps: true
-            highlight: PlasmaExtras.Highlight {}
+            highlight: Item {}
             highlightMoveDuration: 0
             activeFocusOnTab: true
             model: []
@@ -370,12 +350,19 @@ ColumnLayout {
                 required property var modelData
 
                 width: listView.width
+                highlighted: ListView.isCurrentItem
                 typeText: index === 0 ? i18n("Recent Queries") : ""
                 displayText: modelData
                 actions: [{
                     iconSource: "list-remove-symbolic",
                     text: i18n("Remove")
                 }]
+                background: Rectangle {
+                    color: "#505050"
+                    visible: parent.highlighted || parent.hovered
+                    opacity: 0.7
+                    radius: Kirigami.Units.cornerRadius
+                }
                 Accessible.description: i18n("Recent Queries")
             }
 
@@ -451,5 +438,6 @@ ColumnLayout {
     // to align the layout to the top of any pending space in the view
     Item {
         Layout.fillHeight: true
+        implicitHeight: Kirigami.Units.largeSpacing
     }
 }
