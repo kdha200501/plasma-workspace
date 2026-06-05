@@ -30,11 +30,31 @@ ColumnLayout {
     LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: -runnerWindow.topPadding
+        anchors.bottomMargin: -runnerWindow.bottomPadding
+        anchors.leftMargin: -runnerWindow.leftPadding
+        anchors.rightMargin: -runnerWindow.rightPadding
+        color: "transparent"
+        radius: Kirigami.Units.cornerRadius
+        z: -1
+    }
+
     function isKeyUp(event) {
         return (event.modifiers === Qt.NoModifier && event.key === Qt.Key_Up) || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_K)
     }
     function isKeyDown(event) {
         return (event.modifiers === Qt.NoModifier && event.key === Qt.Key_Down) || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_J)
+    }
+
+    function onEscape() {
+        if (queryField.text.length > 0) {
+            queryField.text = ""
+            queryField.forceActiveFocus()
+        } else {
+            root.runnerWindow.visible = false
+        }
     }
 
     // Spacing needs to be 0 to not make the last spacer item add a fake margin
@@ -99,57 +119,34 @@ ColumnLayout {
     
     RowLayout {
         Layout.alignment: Qt.AlignTop
-
-        Keys.onEscapePressed: root.runnerWindow.visible = false
-
-        PlasmaComponents3.ToolButton {
-            id: usageHelpButton
-            visible: root.runnerWindow.helpEnabled
-            checkable: true
-            checked: root.query.startsWith("?")
-            // Reset if out quers starts with "?", otherwise set it to "?"
-            onClicked: root.query = root.query.startsWith("?") ? "" : "?"
-            icon.name: "question"
-            Accessible.name: i18n("Show Usage Help")
-            Accessible.description: i18n("Show Usage Help")
-            KeyNavigation.down: queryField.activeListView
-            PlasmaComponents3.ToolTip {
-                text: i18n("Show Usage Help")
-            }
+        Image {
+            Layout.leftMargin: Kirigami.Units.largeSpacing
+            Layout.rightMargin: Kirigami.Units.smallSpacing
+            width: Kirigami.Units.iconSizes.small
+            height: width
+            source: Qt.resolvedUrl("assets/sherlock.png")
+            fillMode: Image.PreserveAspectFit
         }
-        PlasmaComponents3.ToolButton {
-            visible: !!root.singleRunner
-            icon.name: results.singleRunnerMetaData.iconName
-            onClicked: () => {
-                root.singleRunner = ""
-                root.query = ""
-                fadedTextCompletion.text = ""
-                queryField.forceActiveFocus();
-            }
-            checked: true
-            Accessible.description: i18n("Showing only results from %1", results.singleRunnerMetaData.name)
-            PlasmaComponents3.ToolTip {
-                text: parent.Accessible.description
-            }
-        }
-        PlasmaExtras.SearchField {
+        PlasmaComponents3.TextField {
             id: queryField
             property bool allowCompletion: false
             readonly property ListView activeListView: historyScrollView.visible ? listView : results
 
             Layout.minimumWidth: Kirigami.Units.gridUnit * 25
             Layout.maximumWidth: Kirigami.Units.gridUnit * 25
+            Layout.leftMargin: Kirigami.Units.largeSpacing
+            Layout.rightMargin: Kirigami.Units.largeSpacing
 
+            font.family: Kirigami.Theme.defaultFont.family
+            font.pointSize: 18
             activeFocusOnPress: true
             placeholderText: results.singleRunner ? i18nc("Textfield placeholder text, query specific KRunner plugin",
                                                     "Search '%1'…", results.singleRunnerMetaData.name)
-                                                : i18nc("Textfield placeholder text", "Search…")
+                                                : i18nc("Textfield placeholder text", "Sherlock")
             background.z: -2 // The fadedTextCompletion has -1, so it appears over the background
 
             KeyNavigation.up: activeListView
             KeyNavigation.down: activeListView
-            KeyNavigation.left: usageHelpButton
-            KeyNavigation.right: configureButton
 
             QQC2.Label {
                 id: fadedTextCompletion
@@ -275,6 +272,7 @@ ColumnLayout {
             }
             Keys.onEnterPressed: event => closeOrRun(event)
             Keys.onReturnPressed: event => closeOrRun(event)
+            Keys.onEscapePressed: root.onEscape()
 
             Kirigami.Icon {
                 anchors {
@@ -307,35 +305,6 @@ ColumnLayout {
                 }
             }
         }
-        PlasmaComponents3.ToolButton {
-            id: configureButton
-            icon.name: "configure"
-            onClicked: {
-                root.runnerWindow.visible = false
-                KCMLauncher.open("plasma/kcms/desktop/kcm_krunnersettings")
-            }
-            Accessible.name: i18n("Configure")
-            Accessible.description: i18n("Configure KRunner Behavior")
-            visible: KAuthorized.authorizeControlModule("kcm_krunnersettings")
-            KeyNavigation.right: pinButton
-            KeyNavigation.down: queryField.activeListView
-            PlasmaComponents3.ToolTip {
-                text: i18n("Configure KRunner…")
-            }
-        }
-        PlasmaComponents3.ToolButton {
-            id: pinButton
-            checkable: true
-            checked: root.runnerWindow.pinned
-            onToggled: root.runnerWindow.pinned = checked
-            icon.name: "window-pin"
-            Accessible.name: i18n("Pin")
-            Accessible.description: i18n("Pin Search")
-            KeyNavigation.down: queryField.activeListView
-            PlasmaComponents3.ToolTip {
-                text: i18n("Keep Open")
-            }
-        }
     }
 
     PlasmaComponents3.ScrollView {
@@ -346,6 +315,8 @@ ColumnLayout {
         Layout.maximumHeight: Math.max(listView.contentHeight, results.contentHeight)
         // This replaces the ColumnLayout spacing
         Layout.topMargin: Kirigami.Units.smallSpacing
+        Layout.leftMargin: Kirigami.Units.largeSpacing
+        Layout.rightMargin: Kirigami.Units.largeSpacing
 
         Milou.ResultsView {
             id: results
@@ -354,8 +325,26 @@ ColumnLayout {
             singleRunner: root.singleRunner
 
             keyNavigationWraps: false
-            Keys.onEscapePressed: {
-                root.runnerWindow.visible = false
+            // Do not use the Kirigami highlight color
+            highlight: Item {}
+
+            delegate: Milou.ResultDelegate {
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: 18
+                width: ListView.view.width
+                reversed: ListView.view.reversed
+                highlighted: ListView.isCurrentItem
+                background: Rectangle {
+                    color: "#505050"
+                    visible: parent.highlighted
+                    opacity: 0.7
+                    radius: Kirigami.Units.cornerRadius
+                }
+            }
+
+            Keys.onEscapePressed: event => {
+                event.accepted = true
+                root.onEscape()
             }
             KeyNavigation.up: queryField
             KeyNavigation.down: queryField
@@ -381,6 +370,8 @@ ColumnLayout {
         Layout.maximumHeight: listView.contentHeight
         // This replaces the ColumnLayout spacing
         Layout.topMargin: Kirigami.Units.smallSpacing
+        Layout.leftMargin: Kirigami.Units.largeSpacing
+        Layout.rightMargin: Kirigami.Units.largeSpacing
         visible: root.query.length === 0 && listView.count > 0
         // don't accept keyboard input when not visible so the keys propagate to the other list
         enabled: visible
@@ -388,7 +379,7 @@ ColumnLayout {
         ListView {
             id: listView // needs this id so the delegate can access it
             keyNavigationWraps: false
-            highlight: PlasmaExtras.Highlight {}
+            highlight: Item {}
             highlightMoveDuration: 0
             activeFocusOnTab: true
             model: []
@@ -399,12 +390,21 @@ ColumnLayout {
                 required property var modelData
 
                 width: listView.width
+                highlighted: ListView.isCurrentItem
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: 18
                 typeText: index === 0 ? i18n("Recent Queries") : ""
                 displayText: modelData
                 actions: [{
                     iconSource: "list-remove-symbolic",
                     text: i18n("Remove")
                 }]
+                background: Rectangle {
+                    color: "#505050"
+                    visible: parent.highlighted
+                    opacity: 0.7
+                    radius: Kirigami.Units.cornerRadius
+                }
                 Accessible.description: i18n("Recent Queries")
             }
 
@@ -432,6 +432,10 @@ ColumnLayout {
                     decrementCurrentIndex()
                 }
             }
+            Keys.onEscapePressed: event => {
+                event.accepted = true
+                root.onEscape()
+            }
             Keys.onPressed: event => {
                 if (root.isKeyUp(event)) {
                     if (currentIndex !== 0) {
@@ -445,9 +449,7 @@ ColumnLayout {
                     incrementCurrentIndex();
                 } else if (event.text !== "" && !event.accepted) {
                     // This prevents unprintable control characters from being inserted
-                    if (event.key == Qt.Key_Escape) {
-                        root.showHistory = false
-                    } else if (!/[\x00-\x1F\x7F]/.test(event.text)) {
+                    if (!/[\x00-\x1F\x7F]/.test(event.text)) {
                         queryField.text += event.text;
                     }
                     queryField.focus = true;
@@ -486,5 +488,6 @@ ColumnLayout {
     // to align the layout to the top of any pending space in the view
     Item {
         Layout.fillHeight: true
+        implicitHeight: Kirigami.Units.largeSpacing
     }
 }
