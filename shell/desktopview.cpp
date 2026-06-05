@@ -385,6 +385,7 @@ bool DesktopView::event(QEvent *e)
     return PlasmaQuick::ContainmentView::event(e);
 }
 
+#if 0
 bool DesktopView::handleKRunnerTextInput(QKeyEvent *e)
 {
     // allow only Shift and GroupSwitch modifiers
@@ -446,6 +447,7 @@ bool DesktopView::handleKRunnerTextInput(QKeyEvent *e)
     }
     return false;
 }
+#endif
 
 void DesktopView::keyPressEvent(QKeyEvent *e)
 {
@@ -462,10 +464,10 @@ void DesktopView::keyPressEvent(QKeyEvent *e)
     }
 
     // When a key is pressed on desktop when nothing else is active and type-ahead is disabled in FolderView, forward the key to krunner
-    if (handleKRunnerTextInput(e)) {
-        e->accept();
-        return;
-    }
+//    if (handleKRunnerTextInput(e)) {
+//        e->accept();
+//        return;
+//    }
 }
 
 void DesktopView::showConfigurationInterface(Plasma::Applet *applet)

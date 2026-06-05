@@ -8,6 +8,7 @@
 #include <QApplication>
 
 #include <QAction>
+#include <QFont>
 #include <QCommandLineParser>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -18,8 +19,10 @@
 
 #include <KAboutData>
 #include <KAuthorized>
+#include <KConfigGroup>
 #include <KDBusService>
 #include <KRunner/RunnerManager>
+#include <KSharedConfig>
 
 #include <Plasma/Plasma>
 #include <PlasmaQuick/SharedQmlEngine>
@@ -97,6 +100,18 @@ int main(int argc, char **argv)
     }
 
     KDBusService service(KDBusService::Unique | KDBusService::StartupOption(parser.isSet(replaceOption) ? KDBusService::Replace : 0));
+
+    // KRunner is normally launched by the session with the KDE platform theme, which injects the
+    // system general font. When started standalone without QT_QPA_PLATFORMTHEME, fall back to the
+    // font defined in kdeglobals so Kirigami.Theme.defaultFont (built from qGuiApp->font()) matches.
+    KConfigGroup generalFontGroup(KSharedConfig::openConfig(u"kdeglobals"_s), u"General"_s);
+    const QString generalFontString = generalFontGroup.readEntry(u"font"_s, QString());
+    if (!generalFontString.isEmpty()) {
+        QFont generalFont = app.font();
+        if (generalFont.fromString(generalFontString)) {
+            app.setFont(generalFont);
+        }
+    }
 
     PlasmaQuick::SharedQmlEngine sharedEngine;
     // It is important this to be done before the view is created, as it creates internally a framesvgitem for the background
