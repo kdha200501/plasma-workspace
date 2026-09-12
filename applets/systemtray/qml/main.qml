@@ -199,7 +199,8 @@ ContainmentItem {
                 readonly property int rowsOrColumns: autoSize ? 1 : Math.max(1, Math.min(count, Math.floor(gridThickness / (smallIconSize + Kirigami.Units.smallSpacing))))
 
                 // Add margins only if the panel is larger than a small icon (to avoid large gaps between tiny icons)
-                readonly property int cellSpacing: Kirigami.Units.smallSpacing * Plasmoid.configuration.iconSpacing
+                // increase the spacing between tray icons
+                readonly property int cellSpacing: Kirigami.Units.smallSpacing * 3
                 readonly property int smallSizeCellLength: gridThickness < smallIconSize ? smallIconSize : smallIconSize + cellSpacing
 
                 cellHeight: {
