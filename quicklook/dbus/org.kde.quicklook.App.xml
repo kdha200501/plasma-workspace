@@ -1,0 +1,16 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="org.kde.quicklook.App">
+    <method name="previewUrls">
+      <arg name="urls" type="as" direction="in"/>
+      <arg name="explicitTrigger" type="b" direction="in"/>
+    </method>
+    <method name="close">
+    </method>
+    <method name="owner">
+      <arg name="sender" type="s" direction="out"/>
+    </method>
+    <signal name="closed">
+    </signal>
+  </interface>
+</node>
