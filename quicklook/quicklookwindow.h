@@ -14,6 +14,7 @@
 
 class X11WindowCenteredPositioner;
 class PreviewContent;
+class QDBusServiceWatcher;
 class QKeyEvent;
 class QResizeEvent;
 
@@ -81,6 +82,7 @@ private:
     void updateWidgetGeometry();
     void updateContentCap();
     void updateContentPadding();
+    void watchOwnerConnection(const QString &sender);
     QSize desiredWindowSize() const;
     QSize maxContentSize() const;
 
@@ -89,6 +91,7 @@ private:
     QPointer<QQuickItem> m_contentWidgetItem;
     PreviewContent *m_contentWidget = nullptr;
     X11WindowCenteredPositioner *m_x11Positioner = nullptr;
+    QDBusServiceWatcher *m_ownerWatcher = nullptr;
     bool m_hasContent = false;
     // True while the window is actually shown; tracks the shown->hidden
     // transition for the closed() signal (see hideEvent).

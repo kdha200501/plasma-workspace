@@ -19,6 +19,7 @@
 
 #include <QCoreApplication>
 #include <QDBusConnection>
+#include <QDBusServiceWatcher>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQuickItem>
@@ -278,6 +279,14 @@ void QuickLookWindow::previewUrls(const QStringList &urls, bool explicitTrigger,
         return;
     }
     m_lastFreshSender = dbusSender;
+    // Watch the owner's D-Bus connection so the modal can be closed when the
+    // owning process goes away (e.g. its last window closes and the app quits):
+    // its close call can no longer reach us, and the focus landing on an
+    // unrelated window would otherwise leave the preview open with no one to
+    // dismiss it.
+    if (!dbusSender.isEmpty()) {
+        watchOwnerConnection(dbusSender);
+    }
 
     // A previewUrls() while already visible (or a fresh one) replaces the
     // content in place (no hide/show flicker) - the widget swaps its own display.
@@ -296,6 +305,22 @@ void QuickLookWindow::close()
     setVisible(false);
     m_hasContent = false;
     m_lastFreshSender.clear();
+}
+
+void QuickLookWindow::watchOwnerConnection(const QString &sender)
+{
+    if (!m_ownerWatcher) {
+        m_ownerWatcher = new QDBusServiceWatcher(this);
+        m_ownerWatcher->setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
+        connect(m_ownerWatcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &service) {
+            // The connection that last opened the preview disconnected (its
+            // process quit), so nobody left can dismiss the modal - close it.
+            if (service == m_lastFreshSender) {
+                close();
+            }
+        });
+    }
+    m_ownerWatcher->addWatchedService(sender);
 }
 
 void QuickLookWindow::showEvent(QShowEvent *event)
