@@ -311,6 +311,10 @@ void QuickLookWindow::watchOwnerConnection(const QString &sender)
 {
     if (!m_ownerWatcher) {
         m_ownerWatcher = new QDBusServiceWatcher(this);
+        // The default constructor leaves the watcher attached to an invalid
+        // (unconnected) QDBusConnection, in which case addWatchedService() is a
+        // no-op. Point it at the session bus before watching anything.
+        m_ownerWatcher->setConnection(QDBusConnection::sessionBus());
         m_ownerWatcher->setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
         connect(m_ownerWatcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &service) {
             // The connection that last opened the preview disconnected (its
