@@ -36,7 +36,7 @@ ColumnLayout {
         anchors.bottomMargin: -runnerWindow.bottomPadding
         anchors.leftMargin: -runnerWindow.leftPadding
         anchors.rightMargin: -runnerWindow.rightPadding
-        color: "#801C1C1E"
+        color: "transparent"
         radius: Kirigami.Units.cornerRadius
         z: -1
     }
