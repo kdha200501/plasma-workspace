@@ -19,7 +19,7 @@ set_target_properties(kio_desktop PROPERTIES OUTPUT_NAME "desktop")
 ########### next target ###############
 
 kcoreaddons_add_plugin(desktopnotifier SOURCES desktopnotifier.cpp INSTALL_NAMESPACE "kf6/kded")
-target_link_libraries(desktopnotifier KF6::ConfigCore KF6::KIOCore KF6::DBusAddons)
+target_link_libraries(desktopnotifier KF6::ConfigCore KF6::KIOCore KF6::DBusAddons Qt::DBus Canberra::Canberra)
 
 ########### install files ###############
 
