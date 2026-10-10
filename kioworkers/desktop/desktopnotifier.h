@@ -25,10 +25,14 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void dirty(const QString &path);
+    void trashFilesAdded(const QString &directory);
+    void trashFilesRemoved(const QStringList &urls);
+    void trashEmptied();
 
 private:
     void checkDesktopLocation();
 
     QFileSystemWatcher *watcher;
     QUrl m_desktopLocation;
+    int m_trashCount;
 };
