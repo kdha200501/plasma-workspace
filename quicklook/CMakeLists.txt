@@ -53,6 +53,7 @@ target_link_libraries(plasma-quicklook PRIVATE
     Qt::QuickWidgets
     Qt::Multimedia
     Qt::MultimediaWidgets
+    KF6::ConfigWidgets
     KF6::GuiAddons
     KF6::I18n
     KF6::IconThemes

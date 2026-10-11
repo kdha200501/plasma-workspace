@@ -11,12 +11,15 @@
 #include "mediawidget.h"
 #include "pixmapviewer.h"
 
+#include <KColorScheme>
 #include <KIconEffect>
 #include <KIconLoader>
 #include <KIconUtils>
 #include <KIO/PreviewJob>
 #include <KJobWidgets>
 #include <KLocalizedString>
+
+#include <Plasma/Theme>
 
 #include <QFont>
 #include <QHBoxLayout>
@@ -38,10 +41,23 @@ constexpr int PLAY_ARROW_BORDER_SIZE = 2;
 // Fallback display size: media without a natural size (audio) and before the
 // first preview arrives.
 const QSize DEFAULT_DISPLAY_SIZE{640, 480};
-// The modal's dark translucent background (see qml/QuickLookView.qml). Painted
-// onto the native content surface so unpainted areas show the calibrated
-// folder-mode background rather than the platform's default clear color.
-const QColor MODAL_BACKGROUND(QStringLiteral("#E6202024"));
+// The modal's background, taken from the theme's window background (the same
+// ColorScheme-Background role KRunner and the notification modal use), so it
+// matches qml/QuickLookView.qml (Kirigami.Theme.backgroundColor). The colours
+// must come from the active desktop theme's colors file (e.g.
+// breeze-dark/colors) via Plasma::Theme, the same way the task switcher
+// resolves them - NOT from the generic kdeglobals fallback, whose [Colors:Window]
+// values are baked from whatever scheme was last applied and can disagree with
+// the theme (light vs dark). Painted onto the native content surface so
+// unpainted areas show the theme colour rather than the platform's default
+// clear color.
+QColor modalBackground()
+{
+    const KSharedConfigPtr colors = Plasma::Theme::globalColorScheme();
+    return KColorScheme(QPalette::Active, KColorScheme::Window, colors)
+        .background(KColorScheme::NormalBackground)
+        .color();
+}
 // The modal's padding around the content. The theme dialog frame already
 // insets by 6px (dialogs/background, see PlasmaWindow::padding()); this inner
 // margin brings the total to 36px between the window edge and the content.
@@ -141,14 +157,15 @@ void PreviewContent::showEvent(QShowEvent *event)
 void PreviewContent::paintEvent(QPaintEvent *event)
 {
     // The content is a native QWindow surface whose clear color is not
-    // guaranteed to be the modal's dark background (it can be the platform
+    // guaranteed to be the modal's background (it can be the platform
     // default, white), so the areas not covered by an opaque child (the empty
     // PixmapViewer preview, the gaps of the listing) show it through. Paint the
-    // modal background explicitly, exactly as DirectoryView does for the folder
-    // mode, so every mode shows the calibrated folder-mode background.
+    // modal background (the theme window colour) explicitly, exactly as
+    // DirectoryView does for the folder mode, so every mode shows the
+    // calibrated folder-mode background.
     QWidget::paintEvent(event);
     QPainter painter(this);
-    painter.fillRect(rect(), MODAL_BACKGROUND);
+    painter.fillRect(rect(), modalBackground());
 }
 
 QSize PreviewContent::sizeHint() const

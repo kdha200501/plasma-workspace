@@ -9,6 +9,7 @@
 // embeds on top of this background, the same way KRunner embeds its content.
 
 import QtQuick
+import org.kde.kirigami as Kirigami
 
 Rectangle {
     id: root
@@ -16,5 +17,5 @@ Rectangle {
     implicitWidth: 640
     implicitHeight: 480
 
-    color: "#E6202024"
+    color: Kirigami.Theme.backgroundColor
 }
