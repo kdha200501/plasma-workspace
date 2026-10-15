@@ -335,16 +335,26 @@ Item {
                                           : i18nd("plasma_lookandfeel_org.kde.lookandfeel", "&Log Out Now")
                 onClicked: root.logoutRequested()
                 KeyNavigation.left: shutdownWithoutUpdatesButton.visible ? shutdownWithoutUpdatesButton : (shutdownButton.visible ? shutdownButton : (rebootWithoutUpdatesButton.visible ? rebootWithoutUpdatesButton : (rebootButton.visible ? rebootButton : (hibernateButton.visible ? hibernateButton : (suspendButton.visible ? suspendButton : cancelButton)))))
-                KeyNavigation.right: cancelButton
+                KeyNavigation.right: lockButton
                 focus: sdtype === ShutdownType.ShutdownTypeNone
                 visible: canLogout && (sdtype === ShutdownType.ShutdownTypeNone || root.showAllOptions)
+            }
+            LogoutButton {
+                id: lockButton
+                icon.name: "system-lock-screen"
+                text: root.showAllOptions ? i18nd("plasma_lookandfeel_org.kde.lookandfeel", "&Lock Screen")
+                                          : i18nd("plasma_lookandfeel_org.kde.lookandfeel", "&Lock Screen Now")
+                onClicked: root.lockScreenRequested()
+                KeyNavigation.left: logoutButton
+                KeyNavigation.right: cancelButton
+                visible: root.showAllOptions
             }
             LogoutButton {
                 id: cancelButton
                 icon.name: "dialog-cancel"
                 text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "&Cancel")
                 onClicked: root.cancelRequested()
-                KeyNavigation.left: logoutButton.visible ? logoutButton : (shutdownWithoutUpdatesButton.visible ? shutdownWithoutUpdatesButton : (shutdownButton.visible ? shutdownButton : (rebootWithoutUpdatesButton.visible ? rebootWithoutUpdatesButton : (rebootButton.visible ? rebootButton : (hibernateButton.visible ? hibernateButton : suspendButton)))))
+                KeyNavigation.left: lockButton.visible ? lockButton : (logoutButton.visible ? logoutButton : (shutdownWithoutUpdatesButton.visible ? shutdownWithoutUpdatesButton : (shutdownButton.visible ? shutdownButton : (rebootWithoutUpdatesButton.visible ? rebootWithoutUpdatesButton : (rebootButton.visible ? rebootButton : (hibernateButton.visible ? hibernateButton : suspendButton))))))
                 KeyNavigation.right: suspendButton.visible ? suspendButton : (hibernateButton.visible ? hibernateButton : rebootButton)
             }
         }
