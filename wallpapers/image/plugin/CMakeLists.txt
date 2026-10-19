@@ -1,5 +1,6 @@
 set(image_SRCS
     daynightwallpaper.cpp daynightwallpaper.h
+    sequencewallpaper.cpp sequencewallpaper.h
     imagebackend.cpp imagebackend.h
     slidemodel.cpp slidemodel.h
     slidefiltermodel.cpp slidefiltermodel.h
@@ -20,6 +21,7 @@ set(image_SRCS
     utils/dynamicmode.h
     utils/maximizedwindowmonitor.cpp utils/maximizedwindowmonitor.h
     utils/mediaproxy.cpp utils/mediaproxy.h
+    utils/sequencetimeline.cpp utils/sequencetimeline.h
     transientimage.cpp transientimage.h
 )
 

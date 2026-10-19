@@ -1,0 +1,8 @@
+{
+    "format": "org.kde.plasma.wallpaper.dynamic-sequence/1",
+    "frames": [
+        { "file": "frames/night.jpg", "anchor": "midnight", "t": 0.0 },
+        { "file": "frames/dawn.jpg", "anchor": "civilDawn", "t": 0.0 },
+        { "file": "frames/noon.jpg", "anchor": "noon", "t": 0.0 }
+    ]
+}

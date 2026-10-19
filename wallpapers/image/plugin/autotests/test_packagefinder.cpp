@@ -119,6 +119,10 @@ void PackageFinderTest::testSelectors()
 
     const auto withAnimatedDarkAndLightImages = WallpaperPackage::from(QFINDTESTDATA("testdata/animated-dark-light"));
     QCOMPARE(withAnimatedDarkAndLightImages->selectors(), QStringList() << QStringLiteral("dark-light"));
+
+    const auto withSequence = WallpaperPackage::from(QFINDTESTDATA("testdata/sequencedynamic"));
+    QVERIFY(withSequence.has_value());
+    QCOMPARE(withSequence->selectors(), QStringList() << QStringLiteral("day-night-sequence"));
 }
 
 QTEST_MAIN(PackageFinderTest)

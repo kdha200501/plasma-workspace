@@ -1,0 +1,13 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "vermette@example.org",
+                "Name": "Ken Vermette"
+            }
+        ],
+        "Id": "org.kde.sequencedynamic.test",
+        "License": "CC0-1.0",
+        "Name": "Sequence Dynamic (For test purpose, don't translate!)"
+    }
+}
