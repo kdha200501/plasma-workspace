@@ -8,6 +8,7 @@
 #include "imagefinder.h"
 
 #include <QDir>
+#include <QFile>
 #include <QImageReader>
 
 #include "findsymlinktarget.h"
@@ -26,6 +27,12 @@ QStringList ImageWallpaper::findAll(const QStringList &searchPaths)
 
         return info.baseName() != QLatin1String("screenshot") && !path.contains(QLatin1String("contents/images/"))
             && !path.contains(QLatin1String("contents/images_dark/"));
+    };
+    // A directory that is a KPackage root is owned by the package model; its images (e.g. a
+    // sequence's frames) must not be exposed as loose wallpapers.
+    const auto isPackageRoot = [](const QString &path) {
+        return QFile::exists(QDir(path).filePath(QLatin1String("metadata.json")))
+            || QFile::exists(QDir(path).filePath(QLatin1String("metadata.desktop")));
     };
     int i;
 
@@ -58,7 +65,8 @@ QStringList ImageWallpaper::findAll(const QStringList &searchPaths)
                 if (filterCondition(realwp) && !realwp.isSymLink() && isAcceptableSuffix(realwp.suffix())) {
                     images.append(realwp.filePath());
                 }
-            } else if (realwp.isDir() && !realwp.absoluteFilePath().contains(QLatin1String("contents/images"))) {
+            } else if (realwp.isDir() && !realwp.absoluteFilePath().contains(QLatin1String("contents/images"))
+                && !isPackageRoot(realwp.absoluteFilePath())) {
                 // add this to the directories we should be looking at
                 if (!visitQueue.contains(realwp.filePath())) {
                     visitQueue.append(realwp.filePath());

@@ -13,12 +13,14 @@
 
 /**
  * The WallpaperPackage type represents a wallpaper with the KPackage format. The wallpaper can
- * be a single image or a pair of dark and light images.
+ * be a single image, a pair of dark and light images, or a sequence of images.
  *
  * The selectors property specifies additional supported modes:
  * * dark-light: the currently displayed image follows the color scheme
  * * day-night: the currently displayed image follows time of day. For example, the dark image
  *      is displayed at night, the light image is displayed at day
+ * * day-night-sequence: the displayed image is picked from the sequence described by
+ *      `dynamic.json` according to the position of the Sun within the day
  *
  * With the day-night mode, plasma will slowly switch between wallpaper images at sunrise and
  * sunset. If this is undesired, the wallpaper can specify `X-KDE-CrossFade: false` in its metadata.

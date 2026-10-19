@@ -488,8 +488,12 @@ void ImageBackend::setLastFolder(const QUrl &url)
 QUrl ImageBackend::makeWallpaperUrl(const QUrl &url, const QStringList &selectors) const
 {
     QString selector;
-    if (m_dynamicMode == DynamicMode::Mode::DayNight && selectors.contains(u"day-night")) {
-        selector = u"day-night"_s;
+    if (m_dynamicMode == DynamicMode::Mode::DayNight) {
+        if (selectors.contains(u"day-night-sequence")) {
+            selector = u"day-night-sequence"_s;
+        } else if (selectors.contains(u"day-night")) {
+            selector = u"day-night"_s;
+        }
     } else if (m_dynamicMode != DynamicMode::Mode::Automatic && selectors.contains(u"dark-light")) {
         if (m_dynamicMode == DynamicMode::Mode::AlwaysDark) {
             selector = u"dark"_s;

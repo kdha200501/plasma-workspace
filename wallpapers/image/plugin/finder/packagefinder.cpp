@@ -10,12 +10,16 @@
 #include <limits>
 
 #include <QDir>
+#include <QFile>
 #include <QImageReader>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include <KPackage/PackageLoader>
 
 #include "findsymlinktarget.h"
 #include "suffixcheck.h"
+#include "utils/sequencetimeline.h"
 
 namespace
 {
@@ -74,6 +78,20 @@ static bool isDayNightSupported(const QString &lightFilePath, const QString &dar
     return true;
 }
 
+static bool isSequenceSupported(const KPackage::Package &package)
+{
+    const QString manifestPath = package.path() + u"/dynamic.json";
+    QFile manifestFile(manifestPath);
+    if (!manifestFile.open(QIODevice::ReadOnly)) {
+        return false;
+    }
+
+    const QJsonObject manifest = QJsonDocument::fromJson(manifestFile.readAll()).object();
+    QList<SequenceFrame> frames;
+    QString error;
+    return SequenceTimeline::parseManifest(manifest, [&package](const QString &file) { return QFileInfo(package.path() + u'/' + file).isFile(); }, frames, error);
+}
+
 std::optional<WallpaperPackage> WallpaperPackage::from(const QString &filePath)
 {
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Wallpaper/Images"));
@@ -105,6 +123,10 @@ std::optional<WallpaperPackage> WallpaperPackage::from(const KPackage::Package &
                 selectors << QStringLiteral("day-night");
             }
         }
+    }
+
+    if (isSequenceSupported(package)) {
+        selectors << QStringLiteral("day-night-sequence");
     }
 
     return WallpaperPackage(package, selectors);

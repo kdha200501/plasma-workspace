@@ -29,6 +29,8 @@ static const QString defaultImageFileName5 = QStringLiteral("\\ BUG454692 file n
 static const QString defaultPackageFolderName1 = QStringLiteral("FEATURE207976-dark-wallpaper");
 static const QString defaultPackageFolderName2 = QStringLiteral("package");
 
+static const QString sequencePackageFolderName1 = QStringLiteral("sequencedynamic");
+
 static const QString alternateImageFileName1 = QStringLiteral("dummy.jpg");
 static const QString alternatePackageFolderName1 = QStringLiteral("dummy");
 

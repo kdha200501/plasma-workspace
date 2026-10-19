@@ -255,13 +255,19 @@ static QImage loadPackage(const TransientImageOptions &options)
     }
 
     const QSize requestedSize = (options.size * options.devicePixelRatio).toSize();
-    WallpaperPackage::findPreferredImageInPackage(package, requestedSize);
 
-    QString path = package.filePath("preferred");
-    if (urlQuery.queryItemValue(QStringLiteral("darkMode")).toInt() == 1) {
-        const QString darkPath = package.filePath("preferredDark");
-        if (!darkPath.isEmpty()) {
-            path = darkPath;
+    QString path;
+    if (const QString file = urlQuery.queryItemValue(QStringLiteral("file")); !file.isEmpty()) {
+        path = package.path() + u'/' + file;
+    } else {
+        WallpaperPackage::findPreferredImageInPackage(package, requestedSize);
+
+        path = package.filePath("preferred");
+        if (urlQuery.queryItemValue(QStringLiteral("darkMode")).toInt() == 1) {
+            const QString darkPath = package.filePath("preferredDark");
+            if (!darkPath.isEmpty()) {
+                path = darkPath;
+            }
         }
     }
 
