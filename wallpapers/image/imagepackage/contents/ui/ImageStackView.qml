@@ -37,6 +37,7 @@ QQC2.StackView {
     property Component staticImageComponent
     property Component animatedImageComponent
     property Component dayNightComponent
+    property Component dayNightSequenceComponent
 
     onFillModeChanged: Qt.callLater(loadImage);
     onModelImageChanged: Qt.callLater(loadImage);
@@ -63,6 +64,12 @@ QQC2.StackView {
                 dayNightComponent = Qt.createComponent("mediacomponent/DayNightComponent.qml");
             }
             return dayNightComponent;
+        }
+        case Wallpaper.BackgroundType.DayNightSequence: {
+            if (!dayNightSequenceComponent) {
+                dayNightSequenceComponent = Qt.createComponent("mediacomponent/SequenceComponent.qml");
+            }
+            return dayNightSequenceComponent;
         }
         }
     }

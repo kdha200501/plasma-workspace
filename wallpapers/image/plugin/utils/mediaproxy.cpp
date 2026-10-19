@@ -278,7 +278,9 @@ QColor MediaProxy::getAccentColorFromMetaData(const KPackage::Package &package)
 
 void MediaProxy::determineBackgroundType(KPackage::Package *package)
 {
-    if (m_source.fragment() == QLatin1String("day-night")) {
+    if (m_source.fragment() == QLatin1String("day-night-sequence")) {
+        m_backgroundType = BackgroundType::Type::DayNightSequence;
+    } else if (m_source.fragment() == QLatin1String("day-night")) {
         m_backgroundType = BackgroundType::Type::DayNight;
     } else {
         QString filePath;
@@ -401,7 +403,7 @@ void MediaProxy::updateModelImage(KPackage::Package *package, bool doesBlockSign
             Q_EMIT customColorChanged();
         }
 
-        if (m_backgroundType == BackgroundType::Type::DayNight) {
+        if (m_backgroundType == BackgroundType::Type::DayNight || m_backgroundType == BackgroundType::Type::DayNightSequence) {
             newRealSource = m_source;
             break;
         }
